@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:eesti_eco/map_screen.dart'; // make sure path is correct
 
 void main() {
-  runApp(const MyApp());
+  runApp(const EestiEcoApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class EestiEcoApp extends StatelessWidget {
+  const EestiEcoApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Estonia Map Demo',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: EstoniaMapScreen(),
+      title: 'EestiECO',
+      theme: ThemeData(primarySwatch: Colors.green),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const SplashScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/create': (context) => const CreateAccountScreen(),
+        '/map': (context) => EstoniaMapScreen(), // already created
+      },
     );
   }
 }
