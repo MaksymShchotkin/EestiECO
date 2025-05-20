@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -9,6 +11,41 @@ class EstoniaMapScreen extends StatefulWidget {
 
 class _EstoniaMapScreenState extends State<EstoniaMapScreen> {
   final MapController _mapController = MapController();
+  List<Polygon> _polygons = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGeoJson();
+  }
+
+  Future<void> _loadGeoJson() async {
+    final String geojsonStr =
+    await rootBundle.loadString('assets/estonia_polygon_map.json');
+    final Map<String, dynamic> geojson = json.decode(geojsonStr);
+
+    List<Polygon> polygons = [];
+
+    for (var feature in geojson['features']) {
+      final coords = feature['geometry']['coordinates'][0];
+      List<LatLng> points = coords
+          .map<LatLng>((pt) => LatLng(pt[1].toDouble(), pt[0].toDouble()))
+          .toList();
+
+      polygons.add(
+        Polygon(
+          points: points,
+          borderColor: Colors.black,
+          color: Colors.blue.withOpacity(0.4),
+          borderStrokeWidth: 1.0,
+        ),
+      );
+    }
+
+    setState(() {
+      _polygons = polygons;
+    });
+  }
 
   double _currentZoom = 7.5;
 
@@ -44,6 +81,7 @@ class _EstoniaMapScreenState extends State<EstoniaMapScreen> {
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.example.app',
               ),
+              PolygonLayer(polygons: _polygons),
             ],
           ),
           Positioned(
