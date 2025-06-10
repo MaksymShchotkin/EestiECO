@@ -5,6 +5,9 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
+import '../main.dart';
 
 class EstoniaMapScreen extends StatefulWidget {
   @override
@@ -111,7 +114,6 @@ class _EstoniaMapScreenState extends State<EstoniaMapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('EestiECO Map'),
         backgroundColor: Colors.green,
       ),
       drawer: Drawer(
@@ -121,16 +123,33 @@ class _EstoniaMapScreenState extends State<EstoniaMapScreen> {
           children: [
             const DrawerHeader(
               decoration: BoxDecoration(color: Colors.green),
-              child: Text(
-                'EestiECO Menu',
+              child: Text('EestiECO',
                 style: TextStyle(color: Colors.white, fontSize: 24),
               ),
             ),
             ListTile(
               leading: const Icon(Icons.logout),
-              title: const Text('Log out'),
-              onTap: () => _logout(context),
+              title: Text(AppLocalizations.of(context)!.logout),
+              onTap: () => _logout(context) ,
             ),
+            ListTile(
+              leading: const Icon(Icons.language),
+              title: DropdownButtonHideUnderline(
+                child: DropdownButton<Locale>(
+                  value: Localizations.localeOf(context),
+                  items: const [
+                    DropdownMenuItem(value: Locale('en'), child: Text('English')),
+                    DropdownMenuItem(value: Locale('uk'), child: Text('Українська')),
+                  ],
+                  onChanged: (Locale? locale) {
+                    if (locale != null) {
+                      MyAppWrapper.setLocale(context, locale);
+                    }
+                  },
+                ),
+              ),
+            ),
+
           ],
         ),
       ),
@@ -252,24 +271,24 @@ class _MarkerDetailSliderState extends State<MarkerDetailSlider> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text("Submit New Data", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(AppLocalizations.of(context)!.enterMeasurement, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               Form(
                 key: _formKey,
                 child: TextFormField(
                   controller: _aqiController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: "Pollution Level"),
+                  decoration: InputDecoration(labelText: AppLocalizations.of(context)!.polutionlvl),
                 ),
               ),
               const SizedBox(height: 10),
               ElevatedButton(
                 onPressed: _submitData,
-                child: const Text("Submit"),
+                child: Text(AppLocalizations.of(context)!.submit),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
               ),
               const SizedBox(height: 20),
               const Divider(),
-              const Text("Recent History:"),
+              Text(AppLocalizations.of(context)!.history),
               Wrap(
                 spacing: 6,
                 runSpacing: 6,

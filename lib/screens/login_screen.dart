@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -33,26 +34,46 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('EestiECO',
-              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, fontStyle: FontStyle.italic, color: Colors.green),
+            Text(
+              AppLocalizations.of(context)!.appTitle,
+              style: const TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                fontStyle: FontStyle.italic,
+                color: Colors.green,
+              ),
             ),
             const SizedBox(height: 48),
             TextField(
               controller: emailController,
-              decoration: InputDecoration(hintText: 'Email', filled: true, fillColor: Colors.grey[200]),
+              decoration: InputDecoration(
+                hintText: AppLocalizations.of(context)!.email,
+                filled: true,
+                fillColor: Colors.grey[200],
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: passwordController,
-              decoration: InputDecoration(hintText: 'Password', filled: true, fillColor: Colors.grey[200]),
+              decoration: InputDecoration(
+                hintText: AppLocalizations.of(context)!.password,
+                filled: true,
+                fillColor: Colors.grey[200],
+              ),
               obscureText: true,
             ),
             const SizedBox(height: 24),
-            ElevatedButton(onPressed: _login, child: const Text('Log in')),
+            ElevatedButton(
+              onPressed: _login,
+              child: Text(AppLocalizations.of(context)!.login),
+            ),
             if (errorMessage.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
-                child: Text(errorMessage, style: const TextStyle(color: Colors.red)),
+                child: Text(
+                  errorMessage,
+                  style: const TextStyle(color: Colors.red),
+                ),
               ),
           ],
         ),

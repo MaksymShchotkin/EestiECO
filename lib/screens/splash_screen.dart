@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
@@ -14,8 +15,8 @@ class SplashScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               // App name
-              const Text(
-                'EestiECO',
+              Text(
+                AppLocalizations.of(context)!.appTitle,
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
@@ -26,23 +27,10 @@ class SplashScreen extends StatelessWidget {
               const SizedBox(height: 48),
 
               // Status text
-              const Text(
-                'As of today:',
+              Text(
+                AppLocalizations.of(context)!.explanation,
                 style: TextStyle(fontSize: 18),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                '4',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const Text('monitors online'),
-              const SizedBox(height: 8),
-              const Text(
-                '10',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const Text('fresh measurements'),
-              const SizedBox(height: 48),
 
               // Buttons
               SizedBox(
@@ -58,7 +46,7 @@ class SplashScreen extends StatelessWidget {
                     textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   onPressed: () => Navigator.pushNamed(context, '/login'),
-                  child: const Text('Log in'),
+                  child: Text(AppLocalizations.of(context)!.login),
                 ),
               ),
               const SizedBox(height: 12),
@@ -75,7 +63,7 @@ class SplashScreen extends StatelessWidget {
                     textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   onPressed: () => Navigator.pushNamed(context, '/create'),
-                  child: const Text('Create an account'),
+                  child: Text(AppLocalizations.of(context)!.createAccount),
                 ),
               ),
             ],

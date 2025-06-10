@@ -1,0 +1,14 @@
+{
+  "appTitle": "EestiECO",
+  "explanation": "App for monitoring Estonian Air Quality",
+  "login": "Log in",
+  "logout": "Log out",
+  "createAccount": "Create an account",
+  "email": "Email",
+  "password": "Password",
+  "username": "Username",
+  "submit": "Submit",
+  "enterMeasurement": "Enter your air quality measurement",
+  "polutionlvl": "Polution level",
+  "history": "Recent history"
+}
