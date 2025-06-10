@@ -52,3 +52,5 @@ app.*.map.json
 /test/
 /web/
 /windows/
+pubspec.lock
+pubspec.yaml
