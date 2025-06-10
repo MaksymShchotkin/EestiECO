@@ -1,7 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  final _authService = AuthService();
+  String errorMessage = '';
+
+  void _login() async {
+    try {
+      await _authService.signIn(emailController.text, passwordController.text);
+      Navigator.pushReplacementNamed(context, '/map');
+    } on FirebaseAuthException catch (e) {
+      setState(() => errorMessage = e.message ?? 'Login failed.');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,37 +33,27 @@ class LoginScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'EestiECO',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                fontStyle: FontStyle.italic,
-                color: Colors.green,
-              ),
+            const Text('EestiECO',
+              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, fontStyle: FontStyle.italic, color: Colors.green),
             ),
             const SizedBox(height: 48),
             TextField(
-              decoration: InputDecoration(
-                hintText: 'Username',
-                filled: true,
-                fillColor: Colors.grey[200],
-              ),
+              controller: emailController,
+              decoration: InputDecoration(hintText: 'Email', filled: true, fillColor: Colors.grey[200]),
             ),
             const SizedBox(height: 16),
             TextField(
-              decoration: InputDecoration(
-                hintText: 'Password',
-                filled: true,
-                fillColor: Colors.grey[200],
-              ),
+              controller: passwordController,
+              decoration: InputDecoration(hintText: 'Password', filled: true, fillColor: Colors.grey[200]),
               obscureText: true,
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () => Navigator.pushNamed(context, '/map'),
-              child: const Text('Log in'),
-            ),
+            ElevatedButton(onPressed: _login, child: const Text('Log in')),
+            if (errorMessage.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(errorMessage, style: const TextStyle(color: Colors.red)),
+              ),
           ],
         ),
       ),

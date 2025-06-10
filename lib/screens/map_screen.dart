@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class EstoniaMapScreen extends StatefulWidget {
   @override
@@ -12,42 +14,43 @@ class EstoniaMapScreen extends StatefulWidget {
 class _EstoniaMapScreenState extends State<EstoniaMapScreen> {
   final MapController _mapController = MapController();
   List<Polygon> _polygons = [];
+  double _currentZoom = 7.5;
+
+  final List<Map<String, dynamic>> _cities = [
+    {'id': 'tallinn', 'name': 'Tallinn, Kadaka tee', 'location': LatLng(59.4370, 24.7536), 'latestAQI': null},
+    {'id': 'tartu', 'name': 'Tartu', 'location': LatLng(58.3776, 26.7290), 'latestAQI': null},
+    {'id': 'narva', 'name': 'Narva', 'location': LatLng(59.3794, 28.1794), 'latestAQI': null},
+    {'id': 'parnu', 'name': 'Pärnu', 'location': LatLng(58.3859, 24.4971), 'latestAQI': null},
+    {'id': 'viljandi', 'name': 'Viljandi', 'location': LatLng(58.3639, 25.5904), 'latestAQI': null},
+  ];
 
   @override
   void initState() {
     super.initState();
-    _loadGeoJson();
+    _loadLatestAQIData();
   }
 
-  Future<void> _loadGeoJson() async {
-    final String geojsonStr =
-    await rootBundle.loadString('assets/estonia_polygon_map.json');
-    final Map<String, dynamic> geojson = json.decode(geojsonStr);
+  Future<void> _loadLatestAQIData() async {
+    for (var city in _cities) {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('air_quality_markers')
+          .doc(city['id'])
+          .collection('measurements')
+          .orderBy('timestamp', descending: true)
+          .limit(1)
+          .get();
 
-    List<Polygon> polygons = [];
-
-    for (var feature in geojson['features']) {
-      final coords = feature['geometry']['coordinates'][0];
-      List<LatLng> points = coords
-          .map<LatLng>((pt) => LatLng(pt[1].toDouble(), pt[0].toDouble()))
-          .toList();
-
-      polygons.add(
-        Polygon(
-          points: points,
-          borderColor: Colors.black,
-          color: Colors.blue.withOpacity(0.4),
-          borderStrokeWidth: 1.0,
-        ),
-      );
+      if (snapshot.docs.isNotEmpty) {
+        final aqi = snapshot.docs.first.data()['aqi'];
+        city['latestAQI'] = aqi;
+      } else {
+        city['latestAQI'] = null;
+      }
     }
 
-    setState(() {
-      _polygons = polygons;
-    });
+    // Trigger UI rebuild
+    setState(() {});
   }
-
-  double _currentZoom = 7.5;
 
   void _zoomIn() {
     setState(() {
@@ -63,9 +66,74 @@ class _EstoniaMapScreenState extends State<EstoniaMapScreen> {
     });
   }
 
+  void _logout(BuildContext context) async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+  }
+
+  void _showMarkerDetails(BuildContext context, String cityId) async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('air_quality_markers')
+        .doc(cityId)
+        .collection('measurements')
+        .orderBy('timestamp', descending: true)
+        .limit(10)
+        .get();
+
+    final measurements = snapshot.docs.map((doc) => doc.data()).toList();
+
+    // Wait for modal to close
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => MarkerDetailSlider(
+        cityId: cityId,
+        measurements: measurements,
+      ),
+    );
+
+    // Refresh AQI data after modal is closed
+    await _loadLatestAQIData();
+  }
+
+
+  Color getAQIColor(int aqi) {
+    if (aqi < 50) return Colors.green;
+    if (aqi < 100) return Colors.yellow;
+    if (aqi < 150) return Colors.orange;
+    return Colors.red;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('EestiECO Map'),
+        backgroundColor: Colors.green,
+      ),
+      drawer: Drawer(
+        backgroundColor: const Color(0xFFE8FFE6),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(color: Colors.green),
+              child: Text(
+                'EestiECO Menu',
+                style: TextStyle(color: Colors.white, fontSize: 24),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Log out'),
+              onTap: () => _logout(context),
+            ),
+          ],
+        ),
+      ),
       body: Stack(
         children: [
           FlutterMap(
@@ -81,7 +149,35 @@ class _EstoniaMapScreenState extends State<EstoniaMapScreen> {
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.example.app',
               ),
-              PolygonLayer(polygons: _polygons),
+              MarkerLayer(
+                markers: _cities.map((city) {
+                  final int aqi = city['latestAQI'] ?? 0;
+                  return Marker(
+                    width: 30.0,
+                    height: 30.0,
+                    point: city['location'],
+                    child: GestureDetector(
+                      onTap: () => _showMarkerDetails(context, city['id']),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: getAQIColor(aqi),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: Colors.black),
+                        ),
+                        child: Center(
+                          child: Text(
+                            city['latestAQI']?.toString() ?? '?',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white, // Better contrast
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
             ],
           ),
           Positioned(
@@ -92,18 +188,113 @@ class _EstoniaMapScreenState extends State<EstoniaMapScreen> {
                 FloatingActionButton(
                   mini: true,
                   onPressed: _zoomIn,
-                  child: Icon(Icons.zoom_in),
+                  child: const Icon(Icons.zoom_in),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 FloatingActionButton(
                   mini: true,
                   onPressed: _zoomOut,
-                  child: Icon(Icons.zoom_out),
+                  child: const Icon(Icons.zoom_out),
                 ),
               ],
             ),
-          )
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class MarkerDetailSlider extends StatefulWidget {
+  final String cityId;
+  final List<Map<String, dynamic>> measurements;
+
+  const MarkerDetailSlider({required this.cityId, required this.measurements});
+
+  @override
+  _MarkerDetailSliderState createState() => _MarkerDetailSliderState();
+}
+
+class _MarkerDetailSliderState extends State<MarkerDetailSlider> {
+  final _formKey = GlobalKey<FormState>();
+  final _aqiController = TextEditingController();
+
+  Future<void> _submitData() async {
+    final aqi = int.tryParse(_aqiController.text);
+    if (aqi == null || aqi < 0 || aqi > 500) return;
+
+    await FirebaseFirestore.instance
+        .collection('air_quality_markers')
+        .doc(widget.cityId)
+        .collection('measurements')
+        .add({
+      'aqi': aqi,
+      'timestamp': Timestamp.now(),
+    });
+
+    Navigator.pop(context); // closes modal
+  }
+
+  Color getAQIColor(int aqi) {
+    if (aqi < 50) return Colors.green;
+    if (aqi < 100) return Colors.yellow;
+    if (aqi < 150) return Colors.orange;
+    return Colors.red;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("Submit New Data", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Form(
+                key: _formKey,
+                child: TextFormField(
+                  controller: _aqiController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: "Pollution Level"),
+                ),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: _submitData,
+                child: const Text("Submit"),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              ),
+              const SizedBox(height: 20),
+              const Divider(),
+              const Text("Recent History:"),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: widget.measurements.map((data) {
+                  final int aqi = data['aqi'] ?? 0;
+                  return Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: getAQIColor(aqi),
+                      border: Border.all(color: Colors.black54),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Center(
+                      child: Text(
+                        aqi.toString(),
+                        style: const TextStyle(fontSize: 12, color: Colors.white),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
